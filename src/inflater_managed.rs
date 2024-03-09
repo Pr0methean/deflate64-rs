@@ -3,6 +3,7 @@ use crate::input_buffer::{BitsBuffer, InputBuffer};
 use crate::output_window::OutputWindow;
 use crate::{array_copy, array_copy1, BlockType, InflateResult, InflaterState, InternalErr};
 use std::cmp::min;
+use crate::InternalErr::DataError;
 
 // Extra bits for length code 257 - 285.
 static EXTRA_LENGTH_BITS: &[u8] = &[
@@ -411,9 +412,8 @@ impl InflaterManaged {
                     } else {
                         offset = (self.distance_code + 1) as usize;
                     }
-
                     self.output.write_length_distance(self.length, offset);
-                    free_bytes -= self.length;
+                    free_bytes = free_bytes.checked_sub(self.length).ok_or(DataError)?;
                     self.state = InflaterState::DecodeTop;
                 }
 
